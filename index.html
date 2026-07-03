@@ -1,555 +1,975 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-<title>Linkpad — Facebook Link Organizer</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Reel Ledger — Facebook Link Organizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --paper:#f7f4ec;
-    --paper-line:#e4dfd0;
-    --card:#fffdf7;
-    --ink:#2b2a28;
-    --ink-soft:#6b6759;
-    --rule-red:#d98a86;
-    --accent:#c9862f;
-    --accent-ink:#ffffff;
-    --link-unvisited:#2e4a8f;
-    --link-visited:#7c5c96;
-    --danger:#b8503f;
-    --shadow: 0 1px 2px rgba(43,42,40,.06), 0 8px 24px -12px rgba(43,42,40,.18);
-    --radius: 14px;
-    --spiral: #cfc8b3;
-  }
-  [data-theme="dark"]{
-    --paper:#1b1a17;
-    --paper-line:#2c2a24;
-    --card:#242220;
-    --ink:#eae6da;
-    --ink-soft:#a39d8a;
-    --rule-red:#8a4d4a;
-    --accent:#e0a24d;
-    --accent-ink:#1b1a17;
-    --link-unvisited:#8fb0ff;
-    --link-visited:#c9a8e6;
-    --danger:#e07a68;
-    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
-    --spiral: #3a372f;
-  }
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --ink-900:#12151b;
+  --ink-800:#1b1f27;
+  --ink-700:#252b35;
+  --ink-600:#323947;
+  --paper-100:#eceee7;
+  --paper-050:#f7f8f3;
+  --paper-300:#d7d9cd;
+  --paper-500:#b7bab0;
+  --text-dark:#e9e7dd;
+  --text-light:#1c1f24;
+  --muted-dark:#98a0ac;
+  --muted-light:#5c6270;
+  --accent:#e7a335;
+  --accent-strong:#f2b94a;
+  --accent-ink:#2a1c04;
+  --blue:#4c8dff;
+  --purple:#9b6bff;
+  --danger:#e2574c;
+  --success:#43b786;
+  --radius-lg:18px;
+  --radius-md:12px;
+  --radius-sm:8px;
+  --row-h:96px;
+  --font-display:'Space Grotesk',system-ui,sans-serif;
+  --font-body:'Inter',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
+}
+html[data-theme="dark"]{
+  --bg:var(--ink-900); --surface:var(--ink-800); --surface-2:var(--ink-700);
+  --border:var(--ink-600); --text:var(--text-dark); --muted:var(--muted-dark);
+}
+html[data-theme="light"]{
+  --bg:var(--paper-100); --surface:var(--paper-050); --surface-2:#ffffff;
+  --border:var(--paper-300); --text:var(--text-light); --muted:var(--muted-light);
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:var(--font-body); -webkit-font-smoothing:antialiased;
+  transition:background .25s ease,color .25s ease;
+}
+@media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important;} }
+button{font:inherit;}
+a{color:inherit;}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px;}
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-thumb{background:var(--border); border-radius:8px;}
 
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:
-      linear-gradient(var(--paper-line) 1px, transparent 1px);
-    background-size: 100% 2.1rem;
-    background-color: var(--paper);
-    color: var(--ink);
-    font-family: 'Inter', system-ui, sans-serif;
-    min-height:100vh;
-    padding-bottom: 3rem;
-    transition: background-color .25s ease, color .25s ease;
-  }
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.app{ min-height:100%; display:flex; flex-direction:column; }
 
-  .wrap{
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 1.5rem 1rem 2rem;
-  }
+.topbar{
+  position:sticky; top:0; z-index:30;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; padding:14px 20px;
+  background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+.brand{ display:flex; align-items:center; gap:10px; }
+.brand-mark{
+  width:36px; height:36px; border-radius:10px;
+  background:linear-gradient(155deg,var(--accent),var(--accent-strong));
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-weight:600; color:var(--accent-ink);
+  font-size:13px; flex-shrink:0;
+}
+.brand-text h1{
+  font-family:var(--font-display); font-size:17px; font-weight:700; margin:0; letter-spacing:.2px;
+}
+.brand-text p{ margin:0; font-size:11.5px; color:var(--muted); }
+.topbar-actions{ display:flex; align-items:center; gap:10px; }
+.mini-stat{
+  font-family:var(--font-mono); font-size:12px; color:var(--muted);
+  background:var(--surface); border:1px solid var(--border);
+  padding:6px 10px; border-radius:20px; display:flex; align-items:center; gap:6px;
+}
+.mini-stat b{ color:var(--text); font-weight:600; }
+.icon-btn{
+  width:38px; height:38px; border-radius:10px; border:1px solid var(--border);
+  background:var(--surface); color:var(--text); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; font-size:16px;
+  transition:transform .15s ease, background .15s ease;
+}
+.icon-btn:hover{ background:var(--surface-2); }
+.icon-btn:active{ transform:scale(.92); }
 
-  header.top{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-  .brand{display:flex; flex-direction:column; gap:.15rem;}
-  .brand .kicker{
-    font-family:'JetBrains Mono', monospace;
-    font-size:.7rem;
-    letter-spacing:.14em;
-    text-transform:uppercase;
-    color: var(--accent);
-    font-weight:600;
-  }
-  .brand h1{
-    font-family:'Space Grotesk', sans-serif;
-    font-size: 1.6rem;
-    margin:0;
-    font-weight:700;
-    letter-spacing:-.01em;
-  }
-  .brand p{
-    margin:.15rem 0 0;
-    font-size:.85rem;
-    color: var(--ink-soft);
-    max-width: 34ch;
-  }
+.layout{
+  flex:1; display:grid; grid-template-columns:380px 1fr; gap:18px;
+  padding:18px 20px 96px; max-width:1400px; width:100%; margin:0 auto;
+  align-items:start;
+}
+@media (max-width:920px){
+  .layout{ grid-template-columns:1fr; padding-bottom:120px; }
+}
 
-  .theme-toggle{
-    flex-shrink:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    width: 42px;
-    height:42px;
-    border-radius: 50%;
-    border: 1px solid var(--paper-line);
-    background: var(--card);
-    cursor:pointer;
-    box-shadow: var(--shadow);
-    font-size: 1.1rem;
-    color: var(--ink);
-  }
-  .theme-toggle:active{ transform: scale(.94); }
+.card{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:16px;
+}
+.panel-title{
+  font-family:var(--font-display); font-weight:600; font-size:13px;
+  text-transform:uppercase; letter-spacing:.08em; color:var(--muted);
+  margin:0 0 10px;
+}
 
-  .card{
-    position:relative;
-    background: var(--card);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 1.25rem 1.25rem 1.25rem 2.6rem;
-    margin-bottom: 1.25rem;
-    border: 1px solid var(--paper-line);
-  }
-  /* spiral binding + red margin rule, notepad signature */
-  .card::before{
-    content:"";
-    position:absolute;
-    top: 14px; bottom:14px; left: 18px;
-    width: 2px;
-    background: var(--rule-red);
-    opacity:.55;
-  }
-  .card::after{
-    content:"";
-    position:absolute;
-    top:0; bottom:0; left:0;
-    width: 34px;
-    background-image: radial-gradient(circle at 8px 0, transparent 5px, var(--spiral) 5.5px 6.5px, transparent 7px);
-    background-size: 100% 26px;
-    background-repeat: repeat-y;
-    background-position: 0 6px;
-    border-radius: var(--radius) 0 0 var(--radius);
-  }
+/* ---------- input panel ---------- */
+.input-panel{ position:sticky; top:76px; }
+@media (max-width:920px){ .input-panel{ position:static; } }
 
-  .card h2{
-    font-family:'Space Grotesk', sans-serif;
-    font-size: 1rem;
-    margin: 0 0 .75rem;
-    display:flex;
-    align-items:center;
-    gap:.5rem;
-  }
-  .card h2 .count-pill{
-    font-family:'JetBrains Mono', monospace;
-    font-size: .72rem;
-    font-weight:500;
-    color: var(--ink-soft);
-    background: var(--paper);
-    border: 1px solid var(--paper-line);
-    padding: .15rem .5rem;
-    border-radius: 999px;
-  }
+#inputArea{
+  width:100%; min-height:220px; max-height:44vh; resize:vertical;
+  background:var(--surface-2); border:1px dashed var(--border); border-radius:var(--radius-md);
+  color:var(--text); font-family:var(--font-mono); font-size:12.5px; line-height:1.6;
+  padding:12px; outline:none;
+}
+#inputArea:focus{ border-color:var(--accent); border-style:solid; }
 
-  textarea{
-    width:100%;
-    min-height: 140px;
-    resize: vertical;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--ink);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: .88rem;
-    line-height: 2.1rem;
-    padding: 0;
-  }
-  textarea::placeholder{ color: var(--ink-soft); opacity:.7; }
+.counter-grid{
+  display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:12px 0;
+}
+.counter-chip{
+  background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:8px 10px;
+}
+.counter-chip .n{ font-family:var(--font-mono); font-size:17px; font-weight:600; display:block; }
+.counter-chip .l{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+.counter-chip.warn .n{ color:var(--danger); }
+.counter-chip.dupe .n{ color:var(--accent-strong); }
+.counter-chip.ok .n{ color:var(--success); }
 
-  .btn-row{
-    display:flex;
-    flex-wrap:wrap;
-    gap: .6rem;
-    margin-top: .9rem;
-  }
-  button.action{
-    font-family:'Inter', sans-serif;
-    font-weight:600;
-    font-size:.85rem;
-    padding: .65rem 1rem;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    cursor:pointer;
-    display:inline-flex;
-    align-items:center;
-    gap:.4rem;
-    transition: transform .12s ease, opacity .12s ease;
-  }
-  button.action:active{ transform: scale(.96); }
+.toolbar-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.btn{
+  border:1px solid var(--border); background:var(--surface-2); color:var(--text);
+  padding:8px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:12.5px;
+  display:inline-flex; align-items:center; gap:6px; transition:background .15s ease, transform .1s ease;
+}
+.btn:hover{ background:var(--border); }
+.btn:active{ transform:scale(.96); }
+.btn:disabled{ opacity:.4; cursor:not-allowed; }
+.btn-primary{
+  background:linear-gradient(155deg,var(--accent),var(--accent-strong)); color:var(--accent-ink);
+  border:none; font-weight:600; width:100%; justify-content:center; padding:12px; font-size:13.5px;
+}
+.btn-primary:hover{ filter:brightness(1.05); }
+.btn-danger{ color:var(--danger); border-color:var(--danger); background:transparent; }
 
-  .btn-primary{ background: var(--accent); color: var(--accent-ink); }
-  .btn-ghost{
-    background: transparent;
-    color: var(--ink);
-    border-color: var(--paper-line);
-  }
-  .btn-danger{
-    background: transparent;
-    color: var(--danger);
-    border-color: var(--danger);
-  }
-  .btn-danger:hover{ background: var(--danger); color: #fff; }
+/* ---------- output panel ---------- */
+.output-toolbar{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; }
+.search-wrap{ position:relative; flex:1; min-width:160px; }
+.search-wrap input{
+  width:100%; padding:9px 12px 9px 30px; border-radius:var(--radius-sm);
+  border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:12.5px; outline:none;
+}
+.search-wrap input:focus{ border-color:var(--accent); }
+.search-wrap::before{
+  content:"⌕"; position:absolute; left:10px; top:50%; transform:translateY(-50%);
+  color:var(--muted); font-size:14px;
+}
+select{
+  padding:9px 10px; border-radius:var(--radius-sm); border:1px solid var(--border);
+  background:var(--surface-2); color:var(--text); font-size:12.5px; outline:none;
+}
+.dropdown{ position:relative; }
+.dropdown-menu{
+  position:absolute; right:0; top:calc(100% + 6px); background:var(--surface-2);
+  border:1px solid var(--border); border-radius:var(--radius-sm); padding:6px; min-width:140px;
+  display:none; flex-direction:column; gap:2px; z-index:20; box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+.dropdown.open .dropdown-menu{ display:flex; }
+.dropdown-menu button{
+  text-align:left; background:none; border:none; color:var(--text); padding:7px 8px;
+  border-radius:6px; cursor:pointer; font-size:12.5px;
+}
+.dropdown-menu button:hover{ background:var(--border); }
 
-  .output-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:.5rem;
-    flex-wrap:wrap;
-  }
+.stats-strip{
+  display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:14px;
+}
+@media (max-width:760px){ .stats-strip{ grid-template-columns:repeat(3,1fr); } }
+.stat-chip{
+  background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:9px; text-align:center;
+}
+.stat-chip .n{ font-family:var(--font-mono); font-weight:600; font-size:16px; display:block; }
+.stat-chip .l{ font-size:9.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
 
-  ol.link-list{
-    list-style:none;
-    margin: .5rem 0 0;
-    padding: 0;
-  }
-  ol.link-list li{
-    display:flex;
-    align-items:baseline;
-    gap:.5rem;
-    padding: .55rem 0;
-    border-bottom: 1px dashed var(--paper-line);
-    font-family:'JetBrains Mono', monospace;
-    font-size: .82rem;
-    line-height:1.5;
-  }
-  ol.link-list li:last-child{ border-bottom:none; }
+.list-scroll{
+  height:min(62vh,720px); overflow-y:auto; border:1px solid var(--border);
+  border-radius:var(--radius-md); background:var(--surface-2); position:relative;
+}
+.list-spacer{ position:relative; width:100%; }
+.rows-layer{ position:absolute; top:0; left:0; width:100%; }
 
-  .idx{
-    color: var(--ink-soft);
-    font-weight:600;
-    min-width: 1.6rem;
-    flex-shrink:0;
-  }
-  .link-body{
-    display:flex;
-    flex-direction:column;
-    gap:.2rem;
-    min-width:0;
-    flex:1;
-  }
-  ol.link-list a{
-    color: var(--link-unvisited);
-    text-decoration: none;
-    word-break: break-all;
-    border-bottom: 1px solid transparent;
-  }
-  ol.link-list a:hover{ border-bottom-color: currentColor; }
-  ol.link-list a.visited{ color: var(--link-visited); }
+.link-row{
+  position:absolute; left:0; right:0; height:var(--row-h);
+  display:flex; align-items:center; gap:12px; padding:0 12px;
+  border-bottom:1px solid var(--border);
+}
+.stub{
+  flex-shrink:0; width:54px; height:54px; border-radius:12px;
+  display:flex; align-items:center; justify-content:center; flex-direction:column;
+  font-family:var(--font-mono); font-weight:600; font-size:13px;
+  border:2px solid var(--blue); color:var(--blue);
+  background:repeating-linear-gradient(90deg, transparent 0 3px, transparent 3px 3px);
+  transition:transform .2s ease;
+}
+.link-row.visited .stub{
+  border-color:var(--purple); color:#fff;
+  background:linear-gradient(155deg,var(--purple),#7c4de0);
+}
+.link-row.just-clicked .stub{ animation:stamp .35s ease; }
+@keyframes stamp{ 0%{transform:scale(1);} 45%{transform:scale(1.18) rotate(-4deg);} 100%{transform:scale(1);} }
 
-  .click-badge{
-    font-size: .68rem;
-    color: var(--ink-soft);
-    font-family:'Inter', sans-serif;
-    font-weight:600;
-  }
+.row-main{ flex:1; min-width:0; }
+.row-url{
+  display:block; font-family:var(--font-mono); font-size:12.5px; color:var(--blue);
+  text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.link-row.visited .row-url{ color:var(--purple); }
+.row-url:hover{ text-decoration:underline; }
+.row-meta{ margin-top:5px; font-size:11px; color:var(--muted); display:flex; gap:10px; flex-wrap:wrap; }
+.row-meta .id-tag{ font-family:var(--font-mono); }
 
-  .empty-state{
-    color: var(--ink-soft);
-    font-size:.85rem;
-    padding: .5rem 0 .25rem;
-  }
+.row-actions{ display:flex; gap:6px; flex-shrink:0; }
+.mini-btn{
+  width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
+  background:var(--surface); color:var(--text); cursor:pointer; font-size:14px;
+  display:flex; align-items:center; justify-content:center; transition:background .15s ease, transform .1s ease;
+}
+.mini-btn:hover{ background:var(--border); }
+.mini-btn:active{ transform:scale(.9); }
+.mini-btn.danger:hover{ background:var(--danger); color:#fff; border-color:var(--danger); }
 
-  .toast{
-    position: fixed;
-    bottom: 1.2rem;
-    left:50%;
-    transform: translateX(-50%) translateY(8px);
-    background: var(--ink);
-    color: var(--paper);
-    font-size:.82rem;
-    font-weight:600;
-    padding: .6rem 1rem;
-    border-radius: 999px;
-    box-shadow: var(--shadow);
-    opacity:0;
-    pointer-events:none;
-    transition: opacity .2s ease, transform .2s ease;
-    z-index: 50;
-  }
-  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+.empty-state{
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:6px; color:var(--muted); text-align:center; padding:20px;
+}
+.empty-state .big{ font-size:30px; }
+.empty-state h3{ margin:0; font-family:var(--font-display); color:var(--text); font-size:15px; }
+.empty-state p{ margin:0; font-size:12.5px; max-width:280px; }
 
-  @media (max-width: 420px){
-    .card{ padding: 1.1rem 1rem 1.1rem 2.3rem; }
-    .card::after{ width: 26px; }
-    .card::before{ left: 14px; }
-    .brand h1{ font-size: 1.35rem; }
-  }
+/* ---------- mobile sticky action bar ---------- */
+.mobile-bar{
+  position:fixed; left:0; right:0; bottom:0; z-index:40;
+  display:none; gap:10px; padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+  background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(10px);
+  border-top:1px solid var(--border);
+}
+@media (max-width:920px){ .mobile-bar{ display:flex; } }
 
-  @media (prefers-reduced-motion: reduce){
-    *{ transition:none !important; animation:none !important; }
-  }
+.fab{
+  position:fixed; right:20px; bottom:88px; z-index:35;
+  width:52px; height:52px; border-radius:50%; border:none; cursor:pointer;
+  background:linear-gradient(155deg,var(--accent),var(--accent-strong)); color:var(--accent-ink);
+  font-size:20px; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 10px 24px rgba(0,0,0,.3); transition:transform .15s ease;
+}
+.fab:hover{ transform:translateY(-2px); }
+@media (max-width:920px){ .fab{ display:none; } }
+
+/* ---------- toast ---------- */
+.toast{
+  position:fixed; left:50%; bottom:24px; transform:translate(-50%,20px); z-index:60;
+  background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+  padding:10px 16px; border-radius:999px; font-size:12.5px; opacity:0; pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease; box-shadow:0 10px 30px rgba(0,0,0,.3);
+}
+.toast.show{ opacity:1; transform:translate(-50%,0); pointer-events:auto; }
+
+.visually-hidden{
+  position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap;
+}
 </style>
 </head>
-<body data-theme="light">
-<div class="wrap">
+<body>
+<div class="app" id="app">
 
-  <header class="top">
+  <header class="topbar">
     <div class="brand">
-      <span class="kicker">Linkpad</span>
-      <h1>Facebook Link Organizer</h1>
-      <p>Paste a batch of links, get a clean numbered list that tracks what you've opened.</p>
+      <div class="brand-mark">FB</div>
+      <div class="brand-text">
+        <h1>Reel Ledger</h1>
+        <p>Facebook link organizer notepad</p>
+      </div>
     </div>
-    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+    <div class="topbar-actions">
+      <div class="mini-stat">Links <b id="miniTotal">0</b></div>
+      <button class="icon-btn" id="themeToggle" title="Toggle theme" aria-label="Toggle dark/light theme">🌙</button>
+    </div>
   </header>
 
-  <section class="card">
-    <h2>Paste your links</h2>
-    <textarea id="inputArea" placeholder="Paste Facebook links here — comma-separated, space-separated, or one per line.
+  <main class="layout">
+    <!-- ============ INPUT PANEL ============ -->
+    <section class="card input-panel" aria-labelledby="inputTitle">
+      <h2 class="panel-title" id="inputTitle">Paste links</h2>
+      <textarea id="inputArea" placeholder="Paste raw Facebook links here — reels, videos, shares, watch links, fb.watch, m.facebook.com… commas, spaces and new lines are all fine."></textarea>
 
-e.g. https://www.facebook.com/share/r/1H683XwZii/, https://www.facebook.com/share/19A3hNNERk/"></textarea>
-    <div class="btn-row">
-      <button class="action btn-primary" id="formatBtn">✎ Format Links</button>
-      <button class="action btn-danger" id="clearBtn">✕ Clear Everything</button>
-    </div>
-  </section>
+      <div class="counter-grid">
+        <div class="counter-chip"><span class="n" id="cChars">0</span><span class="l">Characters</span></div>
+        <div class="counter-chip ok"><span class="n" id="cUrls">0</span><span class="l">Valid URLs</span></div>
+        <div class="counter-chip dupe"><span class="n" id="cDupes">0</span><span class="l">Duplicates</span></div>
+        <div class="counter-chip warn"><span class="n" id="cInvalid">0</span><span class="l">Invalid</span></div>
+      </div>
 
-  <section class="card">
-    <div class="output-header">
-      <h2>Organized list <span class="count-pill" id="countPill">0 links</span></h2>
-      <button class="action btn-ghost" id="copyBtn">⧉ Copy All Links</button>
-    </div>
-    <ol class="link-list" id="linkList"></ol>
-    <p class="empty-state" id="emptyState">Nothing here yet — format a batch of links above and they'll show up as a numbered list.</p>
-  </section>
+      <div class="toolbar-row">
+        <button class="btn" id="btnSelectAll">Select all</button>
+        <button class="btn" id="btnClear">Clear</button>
+        <button class="btn" id="btnUndo" disabled>↶ Undo</button>
+        <button class="btn" id="btnRedo" disabled>↷ Redo</button>
+      </div>
 
+      <button class="btn btn-primary" id="btnProcess">⚡ Process links</button>
+    </section>
+
+    <!-- ============ OUTPUT PANEL ============ -->
+    <section class="card output-panel" aria-labelledby="outputTitle">
+      <h2 class="panel-title" id="outputTitle">Ledger</h2>
+
+      <div class="output-toolbar">
+        <div class="search-wrap">
+          <input type="text" id="searchInput" placeholder="Search by URL, ID or number…" aria-label="Search links">
+        </div>
+        <select id="sortSelect" aria-label="Sort links">
+          <option value="original">Original order</option>
+          <option value="asc">URL A → Z</option>
+          <option value="desc">URL Z → A</option>
+          <option value="mostClicked">Most clicked</option>
+          <option value="leastClicked">Least clicked</option>
+          <option value="visitedFirst">Visited first</option>
+          <option value="unvisitedFirst">Unvisited first</option>
+        </select>
+        <button class="btn" id="btnCopyAll">📋 Copy all</button>
+        <div class="dropdown" id="exportDropdown">
+          <button class="btn" id="btnExportToggle">⬇ Export</button>
+          <div class="dropdown-menu">
+            <button data-format="txt">as TXT</button>
+            <button data-format="csv">as CSV</button>
+            <button data-format="json">as JSON</button>
+          </div>
+        </div>
+        <button class="btn" id="btnImport">⬆ Import</button>
+        <input type="file" id="importFile" accept=".txt,.csv,.json" class="visually-hidden" />
+        <button class="btn btn-danger" id="btnClearAll">Clear all</button>
+      </div>
+
+      <div class="stats-strip">
+        <div class="stat-chip"><span class="n" id="sTotal">0</span><span class="l">Total</span></div>
+        <div class="stat-chip"><span class="n" id="sUnique">0</span><span class="l">Unique</span></div>
+        <div class="stat-chip"><span class="n" id="sDupes">0</span><span class="l">Dupes removed</span></div>
+        <div class="stat-chip"><span class="n" id="sVisited">0</span><span class="l">Visited</span></div>
+        <div class="stat-chip"><span class="n" id="sUnvisited">0</span><span class="l">Unvisited</span></div>
+        <div class="stat-chip"><span class="n" id="sClicks">0</span><span class="l">Total clicks</span></div>
+      </div>
+
+      <div class="list-scroll" id="listScroll">
+        <div class="list-spacer" id="listSpacer">
+          <div class="rows-layer" id="rowsLayer"></div>
+        </div>
+        <div class="empty-state" id="emptyState">
+          <div class="big">🗂️</div>
+          <h3>No links yet</h3>
+          <p>Paste some Facebook links on the left and hit Process Links to build your ledger.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <button class="fab" id="fabProcess" title="Process links" aria-label="Process links">⚡</button>
+
+  <div class="mobile-bar">
+    <button class="btn btn-primary" id="btnProcessMobile" style="flex:1">⚡ Process links</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
 </div>
 
-<div class="toast" id="toast"></div>
-
 <script>
-(function(){
+/* ============================================================
+   CORE LOGIC
+   ============================================================ */
+(function () {
   "use strict";
 
-  var STORAGE_CLICKS = "linkpad_click_data_v1";
-  var STORAGE_LIST    = "linkpad_current_list_v1";
-  var STORAGE_THEME   = "linkpad_theme_v1";
+  var STORAGE_KEY = "fbLinkOrganizer.v1";
+  var ROW_HEIGHT = 96;
+  var BUFFER_ROWS = 6;
 
-  var inputArea   = document.getElementById("inputArea");
-  var formatBtn   = document.getElementById("formatBtn");
-  var clearBtn    = document.getElementById("clearBtn");
-  var copyBtn     = document.getElementById("copyBtn");
-  var linkList    = document.getElementById("linkList");
-  var countPill   = document.getElementById("countPill");
-  var emptyState  = document.getElementById("emptyState");
-  var themeToggle = document.getElementById("themeToggle");
-  var toastEl     = document.getElementById("toast");
+  var ANY_URL_RE = /https?:\/\/[^\s,]+/gi;
+  var FB_HOST_RE = /^https?:\/\/(www\.|m\.|web\.)?(facebook\.com|fb\.watch)\//i;
+  var TRAIL_PUNCT_RE = /[),.\]>"'\u201d\u2019]+$/;
 
-  // ---------- Theme ----------
-  function applyTheme(theme){
-    document.body.setAttribute("data-theme", theme);
-    themeToggle.textContent = theme === "dark" ? "☀️" : "🌙";
-    localStorage.setItem(STORAGE_THEME, theme);
+  var state = {
+    items: [],
+    nextOrder: 0,
+    nextIdNum: 1,
+    duplicatesRemovedTotal: 0,
+    theme: "dark",
+    sort: "original",
+    search: ""
+  };
+
+  var saveTimer = null;
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      var parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.items)) {
+        state.items = parsed.items;
+        state.nextOrder = parsed.nextOrder || state.items.length;
+        state.nextIdNum = parsed.nextIdNum || (state.items.length + 1);
+        state.duplicatesRemovedTotal = parsed.duplicatesRemovedTotal || 0;
+        state.theme = parsed.theme || "dark";
+      }
+    } catch (e) { console.error("Failed to load saved state", e); }
   }
-  (function initTheme(){
-    var saved = localStorage.getItem(STORAGE_THEME);
-    if(saved){ applyTheme(saved); }
-    else{
-      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-      applyTheme(prefersDark ? "dark" : "light");
+
+  function saveStateNow() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        items: state.items,
+        nextOrder: state.nextOrder,
+        nextIdNum: state.nextIdNum,
+        duplicatesRemovedTotal: state.duplicatesRemovedTotal,
+        theme: state.theme
+      }));
+    } catch (e) { console.error("Failed to save state", e); }
+  }
+
+  function saveState() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveStateNow, 250);
+  }
+
+  function extractUrls(text) {
+    var anyMatches = text.match(ANY_URL_RE) || [];
+    var valid = [];
+    var invalidCount = 0;
+    for (var i = 0; i < anyMatches.length; i++) {
+      var cleaned = anyMatches[i].replace(TRAIL_PUNCT_RE, "");
+      if (FB_HOST_RE.test(cleaned)) valid.push(cleaned);
+      else invalidCount++;
     }
-  })();
-  themeToggle.addEventListener("click", function(){
-    var current = document.body.getAttribute("data-theme");
-    applyTheme(current === "dark" ? "light" : "dark");
+    return { valid: valid, invalidCount: invalidCount };
+  }
+
+  function existingUrlSet() {
+    var set = Object.create(null);
+    for (var i = 0; i < state.items.length; i++) set[state.items[i].url] = true;
+    return set;
+  }
+
+  function previewCounts(text) {
+    var res = extractUrls(text);
+    var seen = Object.create(null);
+    var existing = existingUrlSet();
+    var dupes = 0;
+    for (var i = 0; i < res.valid.length; i++) {
+      var u = res.valid[i];
+      if (seen[u] || existing[u]) dupes++;
+      seen[u] = true;
+    }
+    return { chars: text.length, urlCount: res.valid.length, duplicateCount: dupes, invalidCount: res.invalidCount };
+  }
+
+  function makeId() {
+    var n = state.nextIdNum++;
+    return "L" + String(n).padStart(5, "0");
+  }
+
+  function processText(text) {
+    var res = extractUrls(text);
+    var existing = existingUrlSet();
+    var seenThisPass = Object.create(null);
+    var added = 0, dupes = 0;
+    for (var i = 0; i < res.valid.length; i++) {
+      var u = res.valid[i];
+      if (existing[u] || seenThisPass[u]) { dupes++; continue; }
+      seenThisPass[u] = true;
+      state.items.push({ id: makeId(), url: u, order: state.nextOrder++, visited: false, clicks: 0, lastClicked: null });
+      added++;
+    }
+    state.duplicatesRemovedTotal += dupes;
+    saveState();
+    return { added: added, dupes: dupes, invalid: res.invalidCount };
+  }
+
+  function getFilteredSorted() {
+    var q = state.search.trim().toLowerCase();
+    var list = state.items;
+    if (q) {
+      list = list.filter(function (it) {
+        return it.url.toLowerCase().indexOf(q) !== -1 ||
+          it.id.toLowerCase().indexOf(q) !== -1 ||
+          String(it.order + 1).indexOf(q) !== -1;
+      });
+    }
+    list = list.slice();
+    switch (state.sort) {
+      case "asc": list.sort(function (a, b) { return a.url.localeCompare(b.url); }); break;
+      case "desc": list.sort(function (a, b) { return b.url.localeCompare(a.url); }); break;
+      case "mostClicked": list.sort(function (a, b) { return b.clicks - a.clicks || a.order - b.order; }); break;
+      case "leastClicked": list.sort(function (a, b) { return a.clicks - b.clicks || a.order - b.order; }); break;
+      case "visitedFirst": list.sort(function (a, b) { return (b.visited ? 1 : 0) - (a.visited ? 1 : 0) || a.order - b.order; }); break;
+      case "unvisitedFirst": list.sort(function (a, b) { return (a.visited ? 1 : 0) - (b.visited ? 1 : 0) || a.order - b.order; }); break;
+      default: list.sort(function (a, b) { return a.order - b.order; });
+    }
+    return list;
+  }
+
+  function getStats() {
+    var visited = 0, clicks = 0;
+    for (var i = 0; i < state.items.length; i++) {
+      if (state.items[i].visited) visited++;
+      clicks += state.items[i].clicks;
+    }
+    return {
+      total: state.items.length, unique: state.items.length,
+      duplicatesRemoved: state.duplicatesRemovedTotal,
+      visited: visited, unvisited: state.items.length - visited, totalClicks: clicks
+    };
+  }
+
+  window.FBOrganizer = {
+    state: state, ROW_HEIGHT: ROW_HEIGHT, BUFFER_ROWS: BUFFER_ROWS,
+    loadState: loadState, saveState: saveState, saveStateNow: saveStateNow,
+    extractUrls: extractUrls, previewCounts: previewCounts, processText: processText,
+    getFilteredSorted: getFilteredSorted, getStats: getStats, makeId: makeId
+  };
+})();
+
+/* ============================================================
+   UI LAYER
+   ============================================================ */
+(function () {
+  "use strict";
+  var F = window.FBOrganizer;
+  var state = F.state;
+
+  var el = {
+    root: document.documentElement,
+    inputArea: document.getElementById("inputArea"),
+    cChars: document.getElementById("cChars"),
+    cUrls: document.getElementById("cUrls"),
+    cDupes: document.getElementById("cDupes"),
+    cInvalid: document.getElementById("cInvalid"),
+    btnSelectAll: document.getElementById("btnSelectAll"),
+    btnClear: document.getElementById("btnClear"),
+    btnUndo: document.getElementById("btnUndo"),
+    btnRedo: document.getElementById("btnRedo"),
+    btnProcess: document.getElementById("btnProcess"),
+    btnProcessMobile: document.getElementById("btnProcessMobile"),
+    fabProcess: document.getElementById("fabProcess"),
+    searchInput: document.getElementById("searchInput"),
+    sortSelect: document.getElementById("sortSelect"),
+    btnCopyAll: document.getElementById("btnCopyAll"),
+    btnClearAll: document.getElementById("btnClearAll"),
+    exportDropdown: document.getElementById("exportDropdown"),
+    btnExportToggle: document.getElementById("btnExportToggle"),
+    btnImport: document.getElementById("btnImport"),
+    importFile: document.getElementById("importFile"),
+    listScroll: document.getElementById("listScroll"),
+    listSpacer: document.getElementById("listSpacer"),
+    rowsLayer: document.getElementById("rowsLayer"),
+    emptyState: document.getElementById("emptyState"),
+    toast: document.getElementById("toast"),
+    miniTotal: document.getElementById("miniTotal"),
+    themeToggle: document.getElementById("themeToggle"),
+    sTotal: document.getElementById("sTotal"),
+    sUnique: document.getElementById("sUnique"),
+    sDupes: document.getElementById("sDupes"),
+    sVisited: document.getElementById("sVisited"),
+    sUnvisited: document.getElementById("sUnvisited"),
+    sClicks: document.getElementById("sClicks")
+  };
+
+  /* ---------- toast ---------- */
+  var toastTimer = null;
+  function toast(msg) {
+    el.toast.textContent = msg;
+    el.toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.toast.classList.remove("show"); }, 2400);
+  }
+
+  /* ---------- undo / redo ---------- */
+  var textHistory = [];
+  var redoStack = [];
+  var lastSnapshot = "";
+  var inputDebounce = null;
+
+  function refreshUndoButtons() {
+    el.btnUndo.disabled = textHistory.length === 0;
+    el.btnRedo.disabled = redoStack.length === 0;
+  }
+
+  function commitSnapshot(prevValue) {
+    if (prevValue === lastSnapshot) return;
+    textHistory.push(lastSnapshot);
+    if (textHistory.length > 60) textHistory.shift();
+    redoStack = [];
+    lastSnapshot = prevValue;
+    refreshUndoButtons();
+  }
+
+  function updateCounters() {
+    var c = F.previewCounts(el.inputArea.value);
+    el.cChars.textContent = c.chars.toLocaleString();
+    el.cUrls.textContent = c.urlCount.toLocaleString();
+    el.cDupes.textContent = c.duplicateCount.toLocaleString();
+    el.cInvalid.textContent = c.invalidCount.toLocaleString();
+  }
+
+  el.inputArea.addEventListener("input", function () {
+    clearTimeout(inputDebounce);
+    var valueAtInput = el.inputArea.value;
+    inputDebounce = setTimeout(function () {
+      commitSnapshot(valueAtInput);
+      lastSnapshot = valueAtInput;
+      updateCounters();
+    }, 200);
+    updateCounters();
   });
 
-  // ---------- Toast ----------
-  var toastTimer = null;
-  function showToast(msg){
-    toastEl.textContent = msg;
-    toastEl.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 1800);
+  el.btnSelectAll.addEventListener("click", function () {
+    el.inputArea.focus();
+    el.inputArea.select();
+  });
+
+  el.btnClear.addEventListener("click", function () {
+    if (!el.inputArea.value) return;
+    commitSnapshot(el.inputArea.value);
+    el.inputArea.value = "";
+    lastSnapshot = "";
+    updateCounters();
+    el.inputArea.focus();
+  });
+
+  el.btnUndo.addEventListener("click", function () {
+    if (!textHistory.length) return;
+    redoStack.push(el.inputArea.value);
+    var prev = textHistory.pop();
+    el.inputArea.value = prev;
+    lastSnapshot = prev;
+    updateCounters();
+    refreshUndoButtons();
+  });
+
+  el.btnRedo.addEventListener("click", function () {
+    if (!redoStack.length) return;
+    textHistory.push(el.inputArea.value);
+    var next = redoStack.pop();
+    el.inputArea.value = next;
+    lastSnapshot = next;
+    updateCounters();
+    refreshUndoButtons();
+  });
+
+  /* ---------- process ---------- */
+  function doProcess() {
+    var text = el.inputArea.value;
+    if (!text.trim()) { toast("Nothing to process — paste some links first."); return; }
+    var res = F.processText(text);
+    commitSnapshot(text);
+    el.inputArea.value = "";
+    lastSnapshot = "";
+    updateCounters();
+    refreshUndoButtons();
+    renderAll();
+    var msg = res.added + " link" + (res.added === 1 ? "" : "s") + " added";
+    if (res.dupes) msg += ", " + res.dupes + " duplicate" + (res.dupes === 1 ? "" : "s") + " skipped";
+    if (res.invalid) msg += ", " + res.invalid + " invalid ignored";
+    toast(msg);
   }
+  el.btnProcess.addEventListener("click", doProcess);
+  el.btnProcessMobile.addEventListener("click", doProcess);
+  el.fabProcess.addEventListener("click", doProcess);
 
-  // ---------- Click data persistence ----------
-  function loadClickData(){
-    try{
-      var raw = localStorage.getItem(STORAGE_CLICKS);
-      return raw ? JSON.parse(raw) : {};
-    }catch(e){ return {}; }
+  /* ---------- theme ---------- */
+  function applyTheme() {
+    el.root.setAttribute("data-theme", state.theme);
+    el.themeToggle.textContent = state.theme === "dark" ? "🌙" : "☀️";
   }
-  function saveClickData(data){
-    try{ localStorage.setItem(STORAGE_CLICKS, JSON.stringify(data)); }catch(e){}
+  el.themeToggle.addEventListener("click", function () {
+    state.theme = state.theme === "dark" ? "light" : "dark";
+    applyTheme();
+    F.saveState();
+  });
+
+  /* ---------- search / sort ---------- */
+  var searchDebounce = null;
+  el.searchInput.addEventListener("input", function () {
+    clearTimeout(searchDebounce);
+    var v = el.searchInput.value;
+    searchDebounce = setTimeout(function () { state.search = v; renderList(); }, 150);
+  });
+  el.sortSelect.addEventListener("change", function () {
+    state.sort = el.sortSelect.value;
+    renderList();
+  });
+
+  /* ---------- copy all / clear all ---------- */
+  function formatList(list) {
+    return list.map(function (it, i) { return (i + 1) + ". \n" + it.url; }).join("\n\n");
   }
-  var clickData = loadClickData(); // { url: { count, visited } }
+  el.btnCopyAll.addEventListener("click", function () {
+    var list = F.getFilteredSorted();
+    if (!list.length) { toast("No links to copy yet."); return; }
+    copyText(formatList(list));
+    toast("Copied " + list.length + " link" + (list.length === 1 ? "" : "s") + " to clipboard.");
+  });
+  el.btnClearAll.addEventListener("click", function () {
+    if (!state.items.length) return;
+    if (!confirm("Remove all " + state.items.length + " links from the ledger? This can't be undone.")) return;
+    state.items = [];
+    F.saveState();
+    renderAll();
+    toast("Ledger cleared.");
+  });
 
-  // ---------- Parsing ----------
-  var FB_URL_REGEX = /https?:\/\/(?:www\.|m\.|web\.|mobile\.)?facebook\.com\/[^\s,]+/gi;
-  var TRAILING_PUNCT = /[.,;:!?)\]\}'"]+$/;
-
-  function cleanUrl(raw){
-    var url = raw.trim();
-    // strip trailing punctuation that isn't part of the URL (repeatedly)
-    var prev;
-    do{
-      prev = url;
-      url = url.replace(TRAILING_PUNCT, "");
-    }while(url !== prev && url.length > 0);
-    return url;
-  }
-
-  function parseLinks(text){
-    if(!text) return [];
-    var matches = text.match(FB_URL_REGEX) || [];
-    var seen = {};
-    var result = [];
-    for(var i = 0; i < matches.length; i++){
-      var cleaned = cleanUrl(matches[i]);
-      if(!cleaned) continue;
-      if(seen[cleaned]) continue;
-      seen[cleaned] = true;
-      result.push(cleaned);
-    }
-    return result;
-  }
-
-  // ---------- Rendering ----------
-  function render(urls){
-    linkList.innerHTML = "";
-    countPill.textContent = urls.length + (urls.length === 1 ? " link" : " links");
-    emptyState.style.display = urls.length === 0 ? "block" : "none";
-
-    urls.forEach(function(url, i){
-      var entry = clickData[url] || { count: 0, visited: false };
-
-      var li = document.createElement("li");
-
-      var idx = document.createElement("span");
-      idx.className = "idx";
-      idx.textContent = (i + 1) + ".";
-
-      var body = document.createElement("div");
-      body.className = "link-body";
-
-      var a = document.createElement("a");
-      a.href = url;
-      a.textContent = url;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      if(entry.visited) a.classList.add("visited");
-
-      var badge = document.createElement("span");
-      badge.className = "click-badge";
-      badge.textContent = "[Clicks: " + entry.count + "]";
-
-      a.addEventListener("click", function(){
-        entry.count += 1;
-        entry.visited = true;
-        clickData[url] = entry;
-        saveClickData(clickData);
-        a.classList.add("visited");
-        badge.textContent = "[Clicks: " + entry.count + "]";
-      });
-
-      body.appendChild(a);
-      body.appendChild(badge);
-      li.appendChild(idx);
-      li.appendChild(body);
-      linkList.appendChild(li);
-    });
-  }
-
-  function persistCurrentList(urls){
-    try{ localStorage.setItem(STORAGE_LIST, JSON.stringify(urls)); }catch(e){}
-  }
-  function loadPersistedList(){
-    try{
-      var raw = localStorage.getItem(STORAGE_LIST);
-      return raw ? JSON.parse(raw) : [];
-    }catch(e){ return []; }
-  }
-
-  // ---------- Actions ----------
-  function formatLinks(){
-    var urls = parseLinks(inputArea.value);
-    render(urls);
-    persistCurrentList(urls);
-
-    // rewrite the input box itself with the clean, numbered structure
-    if(urls.length){
-      inputArea.value = urls.map(function(u, i){ return (i + 1) + ". " + u; }).join("\n");
-      showToast(urls.length + (urls.length === 1 ? " link formatted" : " links formatted"));
-    }else{
-      showToast("No Facebook links found");
-    }
-  }
-
-  function clearEverything(){
-    var ok = window.confirm("Clear the input, the list, and all click history? This can't be undone.");
-    if(!ok) return;
-    inputArea.value = "";
-    clickData = {};
-    saveClickData(clickData);
-    persistCurrentList([]);
-    render([]);
-    showToast("Cleared");
-  }
-
-  function copyAll(){
-    var urls = loadPersistedList();
-    if(!urls.length){
-      showToast("Nothing to copy yet");
-      return;
-    }
-    var text = urls.map(function(u, i){ return (i + 1) + ". " + u; }).join("\n");
-
-    function fallbackCopy(str){
-      var ta = document.createElement("textarea");
-      ta.value = str;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      try{ document.execCommand("copy"); }catch(e){}
-      document.body.removeChild(ta);
-    }
-
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(function(){
-        showToast("Copied " + urls.length + (urls.length === 1 ? " link" : " links"));
-      }, function(){
-        fallbackCopy(text);
-        showToast("Copied " + urls.length + (urls.length === 1 ? " link" : " links"));
-      });
-    }else{
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () { fallbackCopy(text); });
+    } else {
       fallbackCopy(text);
-      showToast("Copied " + urls.length + (urls.length === 1 ? " link" : " links"));
     }
   }
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
 
-  formatBtn.addEventListener("click", formatLinks);
-  clearBtn.addEventListener("click", clearEverything);
-  copyBtn.addEventListener("click", copyAll);
+  /* ---------- export ---------- */
+  el.btnExportToggle.addEventListener("click", function (e) {
+    e.stopPropagation();
+    el.exportDropdown.classList.toggle("open");
+  });
+  document.addEventListener("click", function () { el.exportDropdown.classList.remove("open"); });
 
-  // ---------- Init: restore last session ----------
-  (function init(){
-    var persisted = loadPersistedList();
-    if(persisted.length){
-      inputArea.value = persisted.map(function(u, i){ return (i + 1) + ". " + u; }).join("\n");
-      render(persisted);
-    }else{
-      render([]);
+  el.exportDropdown.querySelectorAll("[data-format]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var fmt = btn.getAttribute("data-format");
+      var list = F.getFilteredSorted();
+      if (!list.length) { toast("No links to export yet."); return; }
+      var content, mime, filename;
+      if (fmt === "txt") {
+        content = formatList(list); mime = "text/plain"; filename = "reel-ledger.txt";
+      } else if (fmt === "csv") {
+        var rows = ["Number,ID,URL,Visited,Clicks,LastClicked"];
+        list.forEach(function (it, i) {
+          rows.push([i + 1, it.id, '"' + it.url.replace(/"/g, '""') + '"', it.visited, it.clicks, it.lastClicked || ""].join(","));
+        });
+        content = rows.join("\n"); mime = "text/csv"; filename = "reel-ledger.csv";
+      } else {
+        content = JSON.stringify(list, null, 2); mime = "application/json"; filename = "reel-ledger.json";
+      }
+      downloadBlob(content, mime, filename);
+      toast("Exported " + list.length + " links as " + fmt.toUpperCase() + ".");
+    });
+  });
+
+  function downloadBlob(content, mime, filename) {
+    var blob = new Blob([content], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  /* ---------- import ---------- */
+  el.btnImport.addEventListener("click", function () { el.importFile.click(); });
+  el.importFile.addEventListener("change", function () {
+    var file = el.importFile.files[0];
+    if (!file) return;
+    var ext = (file.name.split(".").pop() || "").toLowerCase();
+    var reader = new FileReader();
+    reader.onload = function () {
+      var text = String(reader.result);
+      if (ext === "json") importJson(text); else importTextLike(text);
+      el.importFile.value = "";
+    };
+    reader.readAsText(file);
+  });
+
+  function importTextLike(text) {
+    var res = F.processText(text);
+    renderAll();
+    var msg = "Imported " + res.added + " link" + (res.added === 1 ? "" : "s");
+    if (res.dupes) msg += ", " + res.dupes + " duplicate" + (res.dupes === 1 ? "" : "s") + " skipped";
+    toast(msg);
+  }
+
+  function importJson(text) {
+    var parsed;
+    try { parsed = JSON.parse(text); } catch (e) { toast("That JSON file couldn't be read."); return; }
+    if (!Array.isArray(parsed)) { toast("Expected a JSON array of links."); return; }
+    var existing = {};
+    state.items.forEach(function (it) { existing[it.url] = true; });
+    var added = 0, dupes = 0;
+    parsed.forEach(function (obj) {
+      var url = obj && obj.url;
+      if (typeof url !== "string") return;
+      var cleaned = url.trim();
+      if (!/^https?:\/\/(www\.|m\.|web\.)?(facebook\.com|fb\.watch)\//i.test(cleaned)) return;
+      if (existing[cleaned]) { dupes++; return; }
+      existing[cleaned] = true;
+      state.items.push({
+        id: F.makeId(), url: cleaned, order: state.nextOrder++,
+        visited: !!obj.visited, clicks: Number(obj.clicks) || 0,
+        lastClicked: obj.lastClicked || null
+      });
+      added++;
+    });
+    F.saveState();
+    renderAll();
+    toast("Imported " + added + " link" + (added === 1 ? "" : "s") + (dupes ? ", " + dupes + " duplicates skipped" : ""));
+  }
+
+  /* ---------- relative time ---------- */
+  function relTime(ts) {
+    if (!ts) return "never";
+    var diff = Date.now() - ts;
+    var m = Math.floor(diff / 60000);
+    if (m < 1) return "just now";
+    if (m < 60) return m + "m ago";
+    var h = Math.floor(m / 60);
+    if (h < 24) return h + "h ago";
+    var d = Math.floor(h / 24);
+    if (d < 30) return d + "d ago";
+    return new Date(ts).toLocaleDateString();
+  }
+
+  /* ---------- virtualized list ---------- */
+  var currentList = [];
+  var rowElById = {};
+  var scrollRaf = null;
+  var flashId = null;
+
+  function renderStats() {
+    var s = F.getStats();
+    el.sTotal.textContent = s.total.toLocaleString();
+    el.sUnique.textContent = s.unique.toLocaleString();
+    el.sDupes.textContent = s.duplicatesRemoved.toLocaleString();
+    el.sVisited.textContent = s.visited.toLocaleString();
+    el.sUnvisited.textContent = s.unvisited.toLocaleString();
+    el.sClicks.textContent = s.totalClicks.toLocaleString();
+    el.miniTotal.textContent = s.total.toLocaleString();
+  }
+
+  function rowHtml(it, idx) {
+    var visitedClass = it.visited ? " visited" : "";
+    var flashClass = (it.id === flashId) ? " just-clicked" : "";
+    var safeUrl = it.url.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return (
+      '<div class="link-row' + visitedClass + flashClass + '" data-id="' + it.id + '" style="transform:translateY(' + (idx * F.ROW_HEIGHT) + 'px)">' +
+        '<div class="stub">' + (it.order + 1) + '</div>' +
+        '<div class="row-main">' +
+          '<a class="row-url" href="' + safeUrl + '" target="_blank" rel="noopener noreferrer" data-action="open" data-id="' + it.id + '">' + safeUrl + '</a>' +
+          '<div class="row-meta">' +
+            '<span class="id-tag">' + it.id + '</span>' +
+            '<span>' + it.clicks + ' click' + (it.clicks === 1 ? "" : "s") + '</span>' +
+            '<span>' + relTime(it.lastClicked) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="row-actions">' +
+          '<button class="mini-btn" data-action="copy" data-id="' + it.id + '" title="Copy link" aria-label="Copy link">📋</button>' +
+          '<button class="mini-btn" data-action="share" data-id="' + it.id + '" title="Share link" aria-label="Share link">↗</button>' +
+          '<button class="mini-btn danger" data-action="delete" data-id="' + it.id + '" title="Delete link" aria-label="Delete link">✕</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderVisible() {
+    var scrollTop = el.listScroll.scrollTop;
+    var viewportH = el.listScroll.clientHeight || 400;
+    var start = Math.max(0, Math.floor(scrollTop / F.ROW_HEIGHT) - F.BUFFER_ROWS);
+    var visibleCount = Math.ceil(viewportH / F.ROW_HEIGHT) + F.BUFFER_ROWS * 2;
+    var end = Math.min(currentList.length, start + visibleCount);
+    var html = "";
+    for (var i = start; i < end; i++) html += rowHtml(currentList[i], i);
+    el.rowsLayer.innerHTML = html;
+  }
+
+  function scheduleRenderVisible() {
+    if (scrollRaf) return;
+    scrollRaf = requestAnimationFrame(function () { scrollRaf = null; renderVisible(); });
+  }
+  el.listScroll.addEventListener("scroll", scheduleRenderVisible);
+  window.addEventListener("resize", scheduleRenderVisible);
+
+  function renderList() {
+    currentList = F.getFilteredSorted();
+    el.listSpacer.style.height = (currentList.length * F.ROW_HEIGHT) + "px";
+    el.emptyState.style.display = currentList.length ? "none" : "flex";
+    renderVisible();
+  }
+
+  function renderAll() {
+    renderStats();
+    renderList();
+  }
+
+  /* ---------- row action delegation ---------- */
+  el.rowsLayer.addEventListener("click", function (e) {
+    var target = e.target.closest("[data-action]");
+    if (!target) return;
+    var action = target.getAttribute("data-action");
+    var id = target.getAttribute("data-id");
+    var item = state.items.find(function (it) { return it.id === id; });
+    if (!item) return;
+
+    if (action === "open") {
+      item.clicks += 1;
+      item.visited = true;
+      item.lastClicked = Date.now();
+      flashId = item.id;
+      F.saveState();
+      renderStats();
+      renderVisible();
+      setTimeout(function () { flashId = null; }, 400);
+      return; // allow default navigation
     }
-  })();
 
+    e.preventDefault();
+    if (action === "copy") {
+      copyText(item.url);
+      toast("Link copied.");
+    } else if (action === "share") {
+      if (navigator.share) {
+        navigator.share({ url: item.url }).catch(function () {});
+      } else {
+        copyText(item.url);
+        toast("Sharing isn't supported here — link copied instead.");
+      }
+    } else if (action === "delete") {
+      state.items = state.items.filter(function (it) { return it.id !== id; });
+      F.saveState();
+      renderAll();
+      toast("Link removed.");
+    }
+  });
+
+  /* ---------- init ---------- */
+  F.loadState();
+  applyTheme();
+  updateCounters();
+  refreshUndoButtons();
+  renderAll();
 })();
 </script>
 </body>
