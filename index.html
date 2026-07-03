@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Linkpad — Facebook Link Organizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f7f4ec;
+    --paper-line:#e4dfd0;
+    --card:#fffdf7;
+    --ink:#2b2a28;
+    --ink-soft:#6b6759;
+    --rule-red:#d98a86;
+    --accent:#c9862f;
+    --accent-ink:#ffffff;
+    --link-unvisited:#2e4a8f;
+    --link-visited:#7c5c96;
+    --danger:#b8503f;
+    --shadow: 0 1px 2px rgba(43,42,40,.06), 0 8px 24px -12px rgba(43,42,40,.18);
+    --radius: 14px;
+    --spiral: #cfc8b3;
+  }
+  [data-theme="dark"]{
+    --paper:#1b1a17;
+    --paper-line:#2c2a24;
+    --card:#242220;
+    --ink:#eae6da;
+    --ink-soft:#a39d8a;
+    --rule-red:#8a4d4a;
+    --accent:#e0a24d;
+    --accent-ink:#1b1a17;
+    --link-unvisited:#8fb0ff;
+    --link-visited:#c9a8e6;
+    --danger:#e07a68;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+    --spiral: #3a372f;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(var(--paper-line) 1px, transparent 1px);
+    background-size: 100% 2.1rem;
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height:100vh;
+    padding-bottom: 3rem;
+    transition: background-color .25s ease, color .25s ease;
+  }
+
+  .wrap{
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 2rem;
+  }
+
+  header.top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .brand{display:flex; flex-direction:column; gap:.15rem;}
+  .brand .kicker{
+    font-family:'JetBrains Mono', monospace;
+    font-size:.7rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color: var(--accent);
+    font-weight:600;
+  }
+  .brand h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size: 1.6rem;
+    margin:0;
+    font-weight:700;
+    letter-spacing:-.01em;
+  }
+  .brand p{
+    margin:.15rem 0 0;
+    font-size:.85rem;
+    color: var(--ink-soft);
+    max-width: 34ch;
+  }
+
+  .theme-toggle{
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width: 42px;
+    height:42px;
+    border-radius: 50%;
+    border: 1px solid var(--paper-line);
+    background: var(--card);
+    cursor:pointer;
+    box-shadow: var(--shadow);
+    font-size: 1.1rem;
+    color: var(--ink);
+  }
+  .theme-toggle:active{ transform: scale(.94); }
+
+  .card{
+    position:relative;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.25rem 1.25rem 1.25rem 2.6rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid var(--paper-line);
+  }
+  /* spiral binding + red margin rule, notepad signature */
+  .card::before{
+    content:"";
+    position:absolute;
+    top: 14px; bottom:14px; left: 18px;
+    width: 2px;
+    background: var(--rule-red);
+    opacity:.55;
+  }
+  .card::after{
+    content:"";
+    position:absolute;
+    top:0; bottom:0; left:0;
+    width: 34px;
+    background-image: radial-gradient(circle at 8px 0, transparent 5px, var(--spiral) 5.5px 6.5px, transparent 7px);
+    background-size: 100% 26px;
+    background-repeat: repeat-y;
+    background-position: 0 6px;
+    border-radius: var(--radius) 0 0 var(--radius);
+  }
+
+  .card h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    margin: 0 0 .75rem;
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+  }
+  .card h2 .count-pill{
+    font-family:'JetBrains Mono', monospace;
+    font-size: .72rem;
+    font-weight:500;
+    color: var(--ink-soft);
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    padding: .15rem .5rem;
+    border-radius: 999px;
+  }
+
+  textarea{
+    width:100%;
+    min-height: 140px;
+    resize: vertical;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .88rem;
+    line-height: 2.1rem;
+    padding: 0;
+  }
+  textarea::placeholder{ color: var(--ink-soft); opacity:.7; }
+
+  .btn-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap: .6rem;
+    margin-top: .9rem;
+  }
+  button.action{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:.85rem;
+    padding: .65rem 1rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:.4rem;
+    transition: transform .12s ease, opacity .12s ease;
+  }
+  button.action:active{ transform: scale(.96); }
+
+  .btn-primary{ background: var(--accent); color: var(--accent-ink); }
+  .btn-ghost{
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--paper-line);
+  }
+  .btn-danger{
+    background: transparent;
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+  .btn-danger:hover{ background: var(--danger); color: #fff; }
+
+  .output-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:.5rem;
+    flex-wrap:wrap;
+  }
+
+  ol.link-list{
+    list-style:none;
+    margin: .5rem 0 0;
+    padding: 0;
+  }
+  ol.link-list li{
+    display:flex;
+    align-items:baseline;
+    gap:.5rem;
+    padding: .55rem 0;
+    border-bottom: 1px dashed var(--paper-line);
+    font-family:'JetBrains Mono', monospace;
+    font-size: .82rem;
+    line-height:1.5;
+  }
+  ol.link-list li:last-child{ border-bottom:none; }
+
+  .idx{
+    color: var(--ink-soft);
+    font-weight:600;
+    min-width: 1.6rem;
+    flex-shrink:0;
+  }
+  .link-body{
+    display:flex;
+    flex-direction:column;
+    gap:.2rem;
+    min-width:0;
+    flex:1;
+  }
+  ol.link-list a{
+    color: var(--link-unvisited);
+    text-decoration: none;
+    word-break: break-all;
+    border-bottom: 1px solid transparent;
+  }
+  ol.link-list a:hover{ border-bottom-color: currentColor; }
+  ol.link-list a.visited{ color: var(--link-visited); }
+
+  .click-badge{
+    font-size: .68rem;
+    color: var(--ink-soft);
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+  }
+
+  .empty-state{
+    color: var(--ink-soft);
+    font-size:.85rem;
+    padding: .5rem 0 .25rem;
+  }
+
+  .toast{
+    position: fixed;
+    bottom: 1.2rem;
+    left:50%;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--ink);
+    color: var(--paper);
+    font-size:.82rem;
+    font-weight:600;
+    padding: .6rem 1rem;
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .2s ease, transform .2s ease;
+    z-index: 50;
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 420px){
+    .card{ padding: 1.1rem 1rem 1.1rem 2.3rem; }
+    .card::after{ width: 26px; }
+    .card::before{ left: 14px; }
+    .brand h1{ font-size: 1.35rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+</style>
+</head>
+<body data-theme="light">
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <span class="kicker">Linkpad</span>
+      <h1>Facebook Link Organizer</h1>
+      <p>Paste a batch of links, get a clean numbered list that tracks what you've opened.</p>
+    </div>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+  </header>
+
+  <section class="card">
+    <h2>Paste your links</h2>
+    <textarea id="inputArea" placeholder="Paste Facebook links here — comma-separated, space-separated, or one per line.
+
+e.g. https://www.facebook.com/share/r/1H683XwZii/, https://www.facebook.com/share/19A3hNNERk/"></textarea>
+    <div class="btn-row">
+      <button class="action btn-primary" id="formatBtn">✎ Format Links</button>
+      <button class="action btn-danger" id="clearBtn">✕ Clear Everything</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="output-header">
+      <h2>Organized list <span class="count-pill" id="countPill">0 links</span></h2>
+      <button class="action btn-ghost" id="copyBtn">⧉ Copy All Links</button>
+    </div>
+    <ol class="link-list" id="linkList"></ol>
+    <p class="empty-state" id="emptyState">Nothing here yet — format a batch of links above and they'll show up as a numbered list.</p>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_CLICKS = "linkpad_click_data_v1";
+  var STORAGE_LIST    = "linkpad_current_list_v1";
+  var STORAGE_THEME   = "linkpad_theme_v1";
+
+  var inputArea   = document.getElementById("inputArea");
+  var formatBtn   = document.getElementById("formatBtn");
+  var clearBtn    = document.getElementById("clearBtn");
+  var copyBtn     = document.getElementById("copyBtn");
+  var linkList    = document.getElementById("linkList");
+  var countPill   = document.getElementById("countPill");
+  var emptyState  = document.getElementById("emptyState");
+  var themeToggle = document.getElementById("themeToggle");
+  var toastEl     = document.getElementById("toast");
+
+  // ---------- Theme ----------
+  function applyTheme(theme){
+    document.body.setAttribute("data-theme", theme);
+    themeToggle.textContent = theme === "dark" ? "☀️" : "🌙";
+    localStorage.setItem(STORAGE_THEME, theme);
+  }
+  (function initTheme(){
+    var saved = localStorage.getItem(STORAGE_THEME);
+    if(saved){ applyTheme(saved); }
+    else{
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      applyTheme(prefersDark ? "dark" : "light");
+    }
+  })();
+  themeToggle.addEventListener("click", function(){
+    var current = document.body.getAttribute("data-theme");
+    applyTheme(current === "dark" ? "light" : "dark");
+  });
+
+  // ---------- Toast ----------
+  var toastTimer = null;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 1800);
+  }
+
+  // ---------- Click data persistence ----------
+  function loadClickData(){
+    try{
+      var raw = localStorage.getItem(STORAGE_CLICKS);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveClickData(data){
+    try{ localStorage.setItem(STORAGE_CLICKS, JSON.stringify(data)); }catch(e){}
+  }
+  var clickData = loadClickData(); // { url: { count, visited } }
+
+  // ---------- Parsing ----------
+  var FB_URL_REGEX = /https?:\/\/(?:www\.|m\.|web\.|mobile\.)?facebook\.com\/[^\s,]+/gi;
+  var TRAILING_PUNCT = /[.,;:!?)\]\}'"]+$/;
+
+  function cleanUrl(raw){
+    var url = raw.trim();
+    // strip trailing punctuation that isn't part of the URL (repeatedly)
+    var prev;
+    do{
+      prev = url;
+      url = url.replace(TRAILING_PUNCT, "");
+    }while(url !== prev && url.length > 0);
+    return url;
+  }
+
+  function parseLinks(text){
+    if(!text) return [];
+    var matches = text.match(FB_URL_REGEX) || [];
+    var seen = {};
+    var result = [];
+    for(var i = 0; i < matches.length; i++){
+      var cleaned = cleanUrl(matches[i]);
+      if(!cleaned) continue;
+      if(seen[cleaned]) continue;
+      seen[cleaned] = true;
+      result.push(cleaned);
+    }
+    return result;
+  }
+
+  // ---------- Rendering ----------
+  function render(urls){
+    linkList.innerHTML = "";
+    countPill.textContent = urls.length + (urls.length === 1 ? " link" : " links");
+    emptyState.style.display = urls.length === 0 ? "block" : "none";
+
+    urls.forEach(function(url, i){
+      var entry = clickData[url] || { count: 0, visited: false };
+
+      var li = document.createElement("li");
+
+      var idx = document.createElement("span");
+      idx.className = "idx";
+      idx.textContent = (i + 1) + ".";
+
+      var body = document.createElement("div");
+      body.className = "link-body";
+
+      var a = document.createElement("a");
+      a.href = url;
+      a.textContent = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      if(entry.visited) a.classList.add("visited");
+
+      var badge = document.createElement("span");
+      badge.className = "click-badge";
+      badge.textContent = "[Clicks: " + entry.count + "]";
+
+      a.addEventListener("click", function(){
+        entry.count += 1;
+        entry.visited = true;
+        clickData[url] = entry;
+        saveClickData(clickData);
+        a.classList.add("visited");
+        badge.textContent = "[Clicks: " + entry.count + "]";
+      });
+
+      body.appendChild(a);
+      body.appendChild(badge);
+      li.appendChild(idx);
+      li.appendChild(body);
+      linkList.appendChild(li);
+    });
+  }
+
+  function persistCurrentList(urls){
+    try{ localStorage.setItem(STORAGE_LIST, JSON.stringify(urls)); }catch(e){}
+  }
+  function loadPersistedList(){
+    try{
+      var raw = localStorage.getItem(STORAGE_LIST);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+
+  // ---------- Actions ----------
+  function formatLinks(){
+    var urls = parseLinks(inputArea.value);
+    render(urls);
+    persistCurrentList(urls);
+
+    // rewrite the input box itself with the clean, numbered structure
+    if(urls.length){
+      inputArea.value = urls.map(function(u, i){ return (i + 1) + ". " + u; }).join("\n");
+      showToast(urls.length + (urls.length === 1 ? " link formatted" : " links formatted"));
+    }else{
+      showToast("No Facebook links found");
+    }
+  }
+
+  function clearEverything(){
+    var ok = window.confirm("Clear the input, the list, and all click history? This can't be undone.");
+    if(!ok) return;
+    inputArea.value = "";
+    clickData = {};
+    saveClickData(clickData);
+    persistCurrentList([]);
+    render([]);
+    showToast("Cleared");
+  }
+
+  function copyAll(){
+    var urls = loadPersistedList();
+    if(!urls.length){
+      showToast("Nothing to copy yet");
+      return;
+    }
+    var text = urls.map(function(u, i){ return (i + 1) + ". " + u; }).join("\n");
+
+    function fallbackCopy(str){
+      var ta = document.createElement("textarea");
+      ta.value = str;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try{ document.execCommand("copy"); }catch(e){}
+      document.body.removeChild(ta);
+    }
+
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        showToast("Copied " + urls.length + (urls.length === 1 ? " link" : " links"));
+      }, function(){
+        fallbackCopy(text);
+        showToast("Copied " + urls.length + (urls.length === 1 ? " link" : " links"));
+      });
+    }else{
+      fallbackCopy(text);
+      showToast("Copied " + urls.length + (urls.length === 1 ? " link" : " links"));
+    }
+  }
+
+  formatBtn.addEventListener("click", formatLinks);
+  clearBtn.addEventListener("click", clearEverything);
+  copyBtn.addEventListener("click", copyAll);
+
+  // ---------- Init: restore last session ----------
+  (function init(){
+    var persisted = loadPersistedList();
+    if(persisted.length){
+      inputArea.value = persisted.map(function(u, i){ return (i + 1) + ". " + u; }).join("\n");
+      render(persisted);
+    }else{
+      render([]);
+    }
+  })();
+
+})();
+</script>
+</body>
+</html>
